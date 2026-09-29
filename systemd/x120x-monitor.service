@@ -1,0 +1,13 @@
+[Unit]
+Description=X120x UPS monitor
+After=multi-user.target
+
+[Service]
+Type=simple
+# Sesuaikan path venv. Butuh root agar bisa menjalankan `shutdown`.
+ExecStart=/opt/x120x-monitor/venv/bin/x120x monitor --shutdown --interval 10
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
