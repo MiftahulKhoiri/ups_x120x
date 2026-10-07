@@ -41,7 +41,7 @@ def to_text(s: Snapshot) -> str:
             "---------- Raspberry Pi 5 ----------",
             f"Input 5V         : {_fmt(st.input_voltage, 'V', 3)}",
             f"CPU core         : {_fmt(st.core_voltage, 'V', 3)} / {_fmt(st.core_amps, 'A', 3)}",
-            f"Daya rail PMIC  : {_fmt(st.watts, 'W')}",
+            f"Daya rail PMIC   : {_fmt(st.watts, 'W')}",
             f"Suhu CPU         : {_fmt(st.temp_c, 'C', 1)}",
             f"Kipas            : {'-' if st.fan_rpm is None else f'{st.fan_rpm} RPM'}",
         ]
