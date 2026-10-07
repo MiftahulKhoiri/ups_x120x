@@ -5,6 +5,7 @@ tetap bisa di-import dan diuji di mesin non-Raspberry Pi.
 """
 from __future__ import annotations
 
+import time
 from typing import Optional
 
 I2C_BUS = 1
@@ -13,6 +14,19 @@ REG_VCELL = 0x02        # register tegangan sel
 REG_SOC = 0x04          # register state-of-charge (persen)
 PLD_PIN = 6             # Power Loss Detection: HIGH = listrik AC normal
 CHG_PIN = 16            # kontrol charging: pull-up = stop, pull-down = charge
+
+# Rentang tegangan wajar sel Li-ion 1S. Di luar rentang ini bacaan dianggap
+# rusak (mis. 0x0000 / 0xFFFF akibat gangguan bus), BUKAN baterai kosong.
+VOLTAGE_MIN = 2.5
+VOLTAGE_MAX = 4.5
+
+READ_RETRIES = 3        # percobaan baca I2C sebelum menyerah
+RETRY_DELAY_S = 0.05
+
+
+class SensorReadError(OSError):
+    """Bacaan sensor tidak masuk akal. Subclass OSError supaya diperlakukan
+    sebagai error baca (dicatat, tidak pernah memicu shutdown)."""
 
 
 def swap_bytes(raw: int) -> int:
@@ -30,6 +44,20 @@ def decode_capacity(raw: int) -> float:
     return max(0.0, min(100.0, swap_bytes(raw) / 256))
 
 
+def validate_voltage(volts: float) -> float:
+    """Tolak tegangan di luar rentang wajar; kembalikan nilai jika lolos."""
+    if not VOLTAGE_MIN <= volts <= VOLTAGE_MAX:
+        raise SensorReadError(f"tegangan di luar rentang wajar: {volts:.3f} V")
+    return volts
+
+
+def decode_capacity_checked(raw: int) -> float:
+    """Seperti decode_capacity, tapi menolak pola 0xFFFF (tanda bus bermasalah)."""
+    if swap_bytes(raw) == 0xFFFF:
+        raise SensorReadError("register kapasitas membaca 0xFFFF (bus bermasalah)")
+    return decode_capacity(raw)
+
+
 class FuelGauge:
     """Membaca tegangan dan kapasitas baterai lewat I2C."""
 
@@ -39,11 +67,23 @@ class FuelGauge:
         self._bus = smbus2.SMBus(bus)
         self._address = address
 
+    def _read_word(self, register: int) -> int:
+        """Baca satu word dengan beberapa kali percobaan ulang jika I2C gagal."""
+        last: OSError = OSError("I2C gagal dibaca")
+        for attempt in range(READ_RETRIES):
+            try:
+                return self._bus.read_word_data(self._address, register)
+            except OSError as exc:
+                last = exc
+                if attempt < READ_RETRIES - 1:
+                    time.sleep(RETRY_DELAY_S)
+        raise last
+
     def voltage(self) -> float:
-        return decode_voltage(self._bus.read_word_data(self._address, REG_VCELL))
+        return validate_voltage(decode_voltage(self._read_word(REG_VCELL)))
 
     def capacity(self) -> float:
-        return decode_capacity(self._bus.read_word_data(self._address, REG_SOC))
+        return decode_capacity_checked(self._read_word(REG_SOC))
 
     def close(self) -> None:
         self._bus.close()
@@ -70,7 +110,9 @@ class ChargeControl:
 
     Device sengaja disimpan (tidak langsung dibuang) supaya konfigurasi pin
     tetap terpasang, dan ditutup dulu sebelum dibuat ulang agar tidak terjadi
-    error "pin already in use". BELUM DIUJI di hardware asli.
+    error "pin already in use". Jika pembuatan device baru gagal, status
+    dianggap tidak diketahui (None) sehingga dicoba lagi pada siklus berikutnya.
+    BELUM DIUJI di hardware asli.
     """
 
     def __init__(self, pin: int = CHG_PIN):
@@ -89,6 +131,8 @@ class ChargeControl:
 
         if self._device is not None:
             self._device.close()
+            self._device = None
+            self._enabled = None
         self._device = InputDevice(self._pin_no, pull_up=not enabled)
         self._enabled = enabled
 
@@ -96,3 +140,4 @@ class ChargeControl:
         if self._device is not None:
             self._device.close()
             self._device = None
+            self._enabled = None

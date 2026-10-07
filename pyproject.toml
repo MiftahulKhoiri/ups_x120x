@@ -1,15 +1,26 @@
 [build-system]
-requires = ["setuptools>=61"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "x120x-monitor"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Pemantau UPS HAT X120x (X1200/X1201/X1202) untuk Raspberry Pi 5"
 readme = "README.md"
 requires-python = ">=3.9"
-license = { text = "GPL-3.0-only" }
+license = "GPL-3.0-only"
+license-files = ["LICENSE"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: POSIX :: Linux",
+    "Topic :: System :: Hardware",
+    "Topic :: System :: Monitoring",
+]
 dependencies = ["smbus2", "gpiozero"]
+
+[project.urls]
+Homepage = "https://github.com/MiftahulKhoiri/ups_x120x"
+Issues = "https://github.com/MiftahulKhoiri/ups_x120x/issues"
 
 [project.optional-dependencies]
 gui = ["PyQt5"]
@@ -17,6 +28,9 @@ dev = ["pytest"]
 
 [project.scripts]
 x120x = "x120x.cli:main"
+
+[tool.setuptools.dynamic]
+version = { attr = "x120x.__version__" }
 
 [tool.setuptools.packages.find]
 where = ["src"]

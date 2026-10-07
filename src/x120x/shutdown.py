@@ -7,6 +7,8 @@ import subprocess
 
 log = logging.getLogger(__name__)
 
+CMD_TIMEOUT_S = 30
+
 
 class LogOnlyShutdown:
     """Tidak mematikan apa pun; hanya menulis log."""
@@ -27,10 +29,11 @@ class SystemShutdown:
 
     def schedule(self, minutes: int) -> None:
         msg = f"Daya UPS hampir habis, sistem mati dalam {minutes} menit."
-        subprocess.run([*self._prefix(), "shutdown", "-P", f"+{minutes}", msg], check=True)
+        subprocess.run([*self._prefix(), "shutdown", "-P", f"+{minutes}", msg],
+                       check=True, timeout=CMD_TIMEOUT_S)
         log.warning(msg)
 
     def cancel(self) -> None:
         subprocess.run([*self._prefix(), "shutdown", "-c", "Listrik pulih, shutdown dibatalkan."],
-                       check=False)
+                       check=False, timeout=CMD_TIMEOUT_S)
         log.info("Shutdown dibatalkan karena listrik pulih")

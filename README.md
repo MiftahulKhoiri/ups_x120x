@@ -14,7 +14,12 @@ yang aman, dan tampilkan statistik sistem (daya, suhu, kipas).
 - `x120x monitor` — pantau terus-menerus, dengan debounce dan shutdown terjadwal
 - `x120x gui` — jendela status PyQt5 (opsional)
 - Aman secara default: **tidak mematikan sistem** kecuali diberi `--shutdown`
-- Error baca sensor (I2C) hanya dicatat, tidak pernah memicu shutdown
+- Bacaan sensor divalidasi (rentang tegangan, pola 0x0000/0xFFFF) dan I2C diulang
+  otomatis; error baca hanya dicatat, tidak pernah langsung memicu shutdown
+- Kapasitas/tegangan rendah harus bertahan beberapa sampel (tahan sag sesaat),
+  dan pembatalan shutdown juga di-debounce (tahan listrik berkedip)
+- Mode darurat: jika gauge mati total *dan* listrik terbukti mati (pin PLD),
+  shutdown tetap dijadwalkan
 - Logika murni terpisah dari hardware, jadi bisa dites tanpa Raspberry Pi
 
 ## Instalasi (di Raspberry Pi 5)
@@ -27,6 +32,8 @@ python3 -m venv --system-site-packages venv
 pip install .            # tambahkan '.[gui]' jika pip tidak memakai PyQt5 dari apt
 ```
 
+Butuh pip/setuptools yang cukup baru (build memakai `setuptools>=77`).
+
 ## Pemakaian
 
 ```bash
@@ -38,6 +45,17 @@ x120x monitor --charge-limit 90             # eksperimental: stop charging di 90
 x120x gui
 ```
 
+Opsi `monitor` yang berguna:
+
+| Opsi | Default | Arti |
+|---|---|---|
+| `--debounce` | 3 | sampel berturut-turut "listrik mati"/"baterai rendah" sebelum dianggap nyata |
+| `--recovery-debounce` | 3 | sampel "listrik normal" berturut-turut sebelum shutdown dibatalkan |
+| `--max-sensor-errors` | 6 | error baca gauge berturut-turut sebelum mode darurat (hanya PLD) |
+| `--low` / `--critical` | 50 / 25 | ambang persen (harus `shutdown < critical < low`) |
+| `--shutdown-pct` / `--shutdown-voltage` | 15 / 3.20 | pemicu shutdown |
+| `--delay` | 5 | menit tunda sebelum shutdown |
+
 Aturan default saat listrik mati (semua bisa diubah lewat opsi):
 
 | Baterai | Status |
@@ -45,16 +63,22 @@ Aturan default saat listrik mati (semua bisa diubah lewat opsi):
 | > 50% | memakai baterai |
 | 25–50% | menipis |
 | 15–25% | kritis |
-| ≤ 15% atau < 3.20 V | jadwalkan `shutdown -P +5`; dibatalkan otomatis jika listrik pulih |
+| ≤ 15% atau < 3.20 V (bertahan 3 sampel) | jadwalkan `shutdown -P +5`; dibatalkan otomatis jika listrik pulih |
 
 ## Jalankan sebagai service
 
-Lihat `systemd/x120x-monitor.service`, lalu:
+Lihat `systemd/x120x-monitor.service`. **Sesuaikan path `ExecStart`** dengan lokasi
+venv kamu (default `/opt/x120x-monitor/venv`), lalu:
 
 ```bash
 sudo cp systemd/x120x-monitor.service /etc/systemd/system/
+sudo systemctl daemon-reload
 sudo systemctl enable --now x120x-monitor
 ```
+
+Catatan: saat service berjalan, pin PLD dipakai olehnya, sehingga `x120x status`
+atau `x120x gui` bisa gagal membuka GPIO ("pin in use"). Hentikan service dulu
+(`sudo systemctl stop x120x-monitor`) bila ingin menjalankannya.
 
 ## Development
 
@@ -63,13 +87,16 @@ pip install -e '.[dev]'
 pytest
 ```
 
+CI (GitHub Actions) menjalankan `pytest` di Python 3.9–3.13. Riwayat perubahan ada
+di `CHANGELOG.md`.
+
 Struktur:
 
 ```
 src/x120x/
-  hardware.py   # I2C fuel gauge, pin PLD, kontrol charging
+  hardware.py   # I2C fuel gauge (+validasi, retry), pin PLD, kontrol charging
   rpi.py        # vcgencmd/PMIC, suhu, kipas
-  monitor.py    # logika: klasifikasi, debounce, histeresis, loop
+  monitor.py    # logika: klasifikasi, debounce, histeresis, mode darurat, loop
   shutdown.py   # aksi shutdown (log-only / sistem)
   report.py     # format teks & JSON
   cli.py, gui.py
@@ -80,8 +107,11 @@ docs/NOTES.md   # catatan hardware & temuan dari skrip asli
 ## Ide pengembangan
 
 - File konfigurasi (TOML) selain opsi CLI
+- `x120x status` yang membaca status dari service (mis. `/run/x120x/status.json`)
+  sehingga bisa dipakai bersamaan dengan service
 - Notifikasi (Telegram/ntfy) saat listrik mati
 - Ekspor metrik (Prometheus) & log riwayat baterai
+- Estimasi sisa waktu baterai (register CRATE fuel gauge)
 - Uji dan finalisasi `--charge-limit` di hardware asli
 - Integrasi shutdown yang menunggu proses penting (misal training/model server) selesai
 

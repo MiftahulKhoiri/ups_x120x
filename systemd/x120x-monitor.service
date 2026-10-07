@@ -1,13 +1,26 @@
 [Unit]
 Description=X120x UPS monitor
-After=multi-user.target
+After=local-fs.target
+# Jangan restart tanpa henti jika gagal terus (mis. I2C belum aktif).
+StartLimitIntervalSec=300
+StartLimitBurst=5
 
 [Service]
 Type=simple
+Environment=PYTHONUNBUFFERED=1
 # Sesuaikan path venv. Butuh root agar bisa menjalankan `shutdown`.
+# Tambahkan --charge-limit 90 untuk membatasi pengisian (eksperimental).
 ExecStart=/opt/x120x-monitor/venv/bin/x120x monitor --shutdown --interval 10
 Restart=on-failure
 RestartSec=5
+# Exit code 2 = dependensi/I2C/GPIO bermasalah; restart tidak akan membantu.
+RestartPreventExitStatus=2
+
+# Hardening ringan (tetap butuh akses /dev/i2c-1, GPIO, dan perintah shutdown).
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=full
 
 [Install]
 WantedBy=multi-user.target

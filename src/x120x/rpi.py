@@ -53,15 +53,18 @@ def total_watts(volts: Dict[str, float], amps: Dict[str, float]) -> float:
 
 
 def cpu_temp() -> Optional[float]:
+    """Suhu CPU. sysfs dibaca lebih dulu (murah); vcgencmd hanya sebagai cadangan,
+    supaya tiap pembacaan tidak perlu memulai subprocess tambahan."""
+    try:
+        return int(THERMAL_FILE.read_text()) / 1000
+    except (OSError, ValueError):
+        pass
     out = _vcgencmd("measure_temp")
     if out:
         m = re.search(r"temp=(-?\d+(?:\.\d+)?)", out)
         if m:
             return float(m[1])
-    try:
-        return int(THERMAL_FILE.read_text()) / 1000
-    except (OSError, ValueError):
-        return None
+    return None
 
 
 def fan_rpm() -> Optional[int]:

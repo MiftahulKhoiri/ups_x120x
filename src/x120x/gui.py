@@ -16,7 +16,7 @@ def render_html(s: Snapshot) -> str:
     if s.stats:
         st = s.stats
         if st.watts is not None:
-            rows.append(("Daya sistem", f"{st.watts:.2f} W"))
+            rows.append(("Daya rail PMIC", f"{st.watts:.2f} W"))
         if st.temp_c is not None:
             rows.append(("Suhu CPU", f"{st.temp_c:.1f} C"))
         if st.fan_rpm is not None:
