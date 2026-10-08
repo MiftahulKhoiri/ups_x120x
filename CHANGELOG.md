@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.2
+
+- `scripts/install.sh`: membuat symlink `/usr/local/bin/x120x` dan me-restart service saat dipasang ulang.
+- Terverifikasi di Pi sebagai service sistem: aktif, tanpa WARNING/ERROR, `/run/x120x/status.json` ditulis, `x120x status` membaca dari service.
+
 ## 0.3.1
 
 - `scripts/install.sh`: pemasang service systemd (venv di `/opt`, mode log-only secara

@@ -48,8 +48,12 @@ esac
 run install -m 644 "$tmp" "$UNIT"
 rm -f "$tmp"
 
+# Perintah `x120x` bisa dipanggil dari mana saja (venv ada di luar PATH).
+run ln -sf "$PREFIX/venv/bin/x120x" /usr/local/bin/x120x
+
 run systemctl daemon-reload
-run systemctl enable --now x120x-monitor
+run systemctl enable x120x-monitor
+run systemctl restart x120x-monitor   # restart agar kode/unit terbaru dipakai saat dipasang ulang
 
 echo
 if [ "$DRY" = 1 ]; then
@@ -62,4 +66,4 @@ else
     echo "Terpasang. Mode: hanya log (pasang ulang dengan --shutdown untuk mengaktifkan shutdown)."
 fi
 echo "Cek   : systemctl status x120x-monitor ; journalctl -u x120x-monitor -f"
-echo "Status: $PREFIX/venv/bin/x120x status"
+echo "Status: x120x status"

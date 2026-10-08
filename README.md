@@ -76,7 +76,7 @@ sudo ./scripts/install.sh              # mode hanya log (aman, untuk uji dulu)
 sudo ./scripts/install.sh --shutdown   # Pi benar-benar dimatikan saat baterai habis
 ```
 
-Setelah terpasang: `systemctl status x120x-monitor` dan `journalctl -u x120x-monitor -f`.
+Setelah terpasang: `x120x status` (skrip membuat symlink di `/usr/local/bin`), `systemctl status x120x-monitor`, dan `journalctl -u x120x-monitor -f`.
 Pasang ulang dengan `--shutdown` hanya setelah mode log terbukti normal.
 
 Manual: lihat `systemd/x120x-monitor.service`. **Sesuaikan path `ExecStart`** dengan lokasi
