@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.1
+
+- `scripts/install.sh`: pemasang service systemd (venv di `/opt`, mode log-only secara
+  default, `--shutdown` untuk mengaktifkan shutdown, `DRY_RUN=1` untuk simulasi).
+- Diuji sebagai service systemd (mode user) di Raspberry Pi 5: start normal, file status
+  `RuntimeDirectory` dibuat dan dihapus saat stop, restart otomatis setelah `kill -9`,
+  exit code 2 tidak di-restart, exit code lain berhenti setelah `StartLimitBurst`.
+- Dokumentasi: venv di `/home` butuh `ProtectHome=read-only`.
+
 ## 0.3.0
 
 - `monitor` menulis status terbaru ke `/run/x120x/status.json` (atomik; opsi

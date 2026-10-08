@@ -68,8 +68,20 @@ Aturan default saat listrik mati (semua bisa diubah lewat opsi):
 
 ## Jalankan sebagai service
 
-Lihat `systemd/x120x-monitor.service`. **Sesuaikan path `ExecStart`** dengan lokasi
-venv kamu (default `/opt/x120x-monitor/venv`), lalu:
+Cara termudah: skrip pemasang (butuh `sudo`, membuat venv di `/opt/x120x-monitor`,
+memasang unit, dan menyalakannya):
+
+```bash
+sudo ./scripts/install.sh              # mode hanya log (aman, untuk uji dulu)
+sudo ./scripts/install.sh --shutdown   # Pi benar-benar dimatikan saat baterai habis
+```
+
+Setelah terpasang: `systemctl status x120x-monitor` dan `journalctl -u x120x-monitor -f`.
+Pasang ulang dengan `--shutdown` hanya setelah mode log terbukti normal.
+
+Manual: lihat `systemd/x120x-monitor.service`. **Sesuaikan path `ExecStart`** dengan lokasi
+venv kamu (default `/opt/x120x-monitor/venv`; unit memakai `ProtectHome=true`, jadi venv di
+`/home` butuh `ProtectHome=read-only`), lalu:
 
 ```bash
 sudo cp systemd/x120x-monitor.service /etc/systemd/system/
