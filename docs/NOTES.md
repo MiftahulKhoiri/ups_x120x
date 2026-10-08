@@ -55,9 +55,9 @@ Ini alasan beberapa keputusan desain di proyek ini:
   di hardware sungguhan. Perlu dicek bahwa konfigurasi pull bertahan selama objek
   `InputDevice` hidup, dan apa yang terjadi pada pin setelah proses berhenti
   (kontrol dilepas saat keluar).
-- Dugaan: `x120x status`/`gui` gagal saat service jalan karena pin PLD diklaim
-  eksklusif oleh service (gpiozero/lgpio "GPIO busy"). Pesan error sudah
-  ditangani, tetapi perilaku persisnya belum dites di Pi dengan HAT terpasang.
+- Terverifikasi di Pi (v0.2.0): `x120x status` saat `monitor` berjalan gagal dengan
+  "GPIO busy" karena pin PLD diklaim eksklusif. Sejak v0.3.0 `status` membaca
+  `/run/x120x/status.json` milik service; hanya `status --live` dan `gui` yang masih terkena.
 - Opsi hardening systemd (`ProtectSystem=full`, `ProtectHome`, `PrivateTmp`)
   belum diuji dengan service sungguhan di Pi; periksa `journalctl -u x120x-monitor`
   setelah memasangnya.

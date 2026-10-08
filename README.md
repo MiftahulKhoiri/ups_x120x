@@ -37,7 +37,8 @@ Butuh pip/setuptools yang cukup baru (build memakai `setuptools>=77`).
 ## Pemakaian
 
 ```bash
-x120x status
+x120x status                                # pakai file status service bila ada
+x120x status --live                         # paksa baca hardware langsung
 x120x status --json
 x120x monitor --interval 10                 # hanya log (aman)
 x120x monitor --shutdown --delay 5          # shutdown sungguhan
@@ -76,9 +77,12 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now x120x-monitor
 ```
 
-Catatan: saat service berjalan, pin PLD dipakai olehnya, sehingga `x120x status`
-atau `x120x gui` bisa gagal membuka GPIO ("pin in use"). Hentikan service dulu
-(`sudo systemctl stop x120x-monitor`) bila ingin menjalankannya.
+Catatan: saat service berjalan, ia memegang pin PLD dan menulis status terbaru ke
+`/run/x120x/status.json` (tiap siklus). `x120x status` otomatis membaca file itu bila
+masih segar (< 60 detik), jadi aman dipakai bersamaan dengan service. `x120x status --live`
+dan `x120x gui` membaca hardware langsung, sehingga gagal dengan "GPIO busy" selama service
+berjalan; hentikan dulu (`sudo systemctl stop x120x-monitor`) jika memang butuh keduanya.
+Matikan penulisan file status dengan `--no-status-file`.
 
 ## Development
 
@@ -107,8 +111,7 @@ docs/NOTES.md   # catatan hardware & temuan dari skrip asli
 ## Ide pengembangan
 
 - File konfigurasi (TOML) selain opsi CLI
-- `x120x status` yang membaca status dari service (mis. `/run/x120x/status.json`)
-  sehingga bisa dipakai bersamaan dengan service
+- `x120x gui` yang ikut membaca file status service (saat ini masih membaca hardware langsung)
 - Notifikasi (Telegram/ntfy) saat listrik mati
 - Ekspor metrik (Prometheus) & log riwayat baterai
 - Estimasi sisa waktu baterai (register CRATE fuel gauge)

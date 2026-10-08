@@ -15,6 +15,8 @@ Restart=on-failure
 RestartSec=5
 # Exit code 2 = dependensi/I2C/GPIO bermasalah; restart tidak akan membantu.
 RestartPreventExitStatus=2
+# Membuat /run/x120x untuk file status (dibaca oleh `x120x status`), dihapus saat service berhenti.
+RuntimeDirectory=x120x
 
 # Hardening ringan (tetap butuh akses /dev/i2c-1, GPIO, dan perintah shutdown).
 NoNewPrivileges=true

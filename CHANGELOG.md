@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.0
+
+- `monitor` menulis status terbaru ke `/run/x120x/status.json` (atomik; opsi
+  `--status-file` / `--no-status-file`) dan menghapusnya saat berhenti.
+- `x120x status` membaca file itu bila masih segar (`--max-age`, default 60 detik), sehingga
+  bisa dipakai bersamaan dengan service tanpa error "GPIO busy". `--live` memaksa baca hardware.
+- Unit systemd: `RuntimeDirectory=x120x`.
+- Diuji langsung di Raspberry Pi 5: status terbaca saat monitor jalan, file dihapus saat
+  monitor dihentikan. Test: 73.
+
 ## 0.2.0
 
 ### Keamanan shutdown
